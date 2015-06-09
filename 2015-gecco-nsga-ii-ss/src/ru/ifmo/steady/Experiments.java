@@ -12,8 +12,8 @@ import ru.ifmo.steady.util.FastRandom;
 import ru.ifmo.steady.NSGA2.Variant;
 
 public class Experiments {
-    private static final int BUDGET = 25000;
-    private static final int GEN_SIZE = 100;
+    private static final int BUDGET = 125000;
+    private static final int GEN_SIZE = 25000;
 
     private static final double orderStat(double[] a, double ratio) {
         double idx0 = (a.length - 1) * ratio;
@@ -64,7 +64,7 @@ public class Experiments {
                 FastRandom.geneticThreadLocal().setSeed(t + 41117);
                 SolutionStorage storage = storageSupplier.get();
                 NSGA2 algo = new NSGA2(problem, storage, GEN_SIZE,
-                                       debSelection, jmetalComparison, variant);
+                        debSelection, jmetalComparison, variant);
                 long startTime = System.nanoTime();
                 algo.initialize();
                 for (int i = GEN_SIZE; i < BUDGET; i += GEN_SIZE) {
@@ -73,7 +73,7 @@ public class Experiments {
                 long finishTime = System.nanoTime();
 
                 hyperVolumes[t] = algo.currentHyperVolume();
-                comparisons[t]  = storage.getComparisonCounter().get();
+                comparisons[t] = storage.getComparisonCounter().get();
                 runningTimes[t] = (finishTime - startTime) / 1e9;
 
                 long startSimTime = System.nanoTime();
@@ -95,12 +95,12 @@ public class Experiments {
             Arrays.sort(runningTimes);
 
             String namePrefix = String.format("%s/%s-%s-%d-%d-%s",
-                runDir,
-                problem.getName(),
-                storageSupplier.get().getName(),
-                debSelection ? 1 : 0,
-                jmetalComparison ? 1 : 0,
-                variant.shortName()
+                    runDir,
+                    problem.getName(),
+                    storageSupplier.get().getName(),
+                    debSelection ? 1 : 0,
+                    jmetalComparison ? 1 : 0,
+                    variant.shortName()
             );
             writeToFile(hyperVolumes, namePrefix + "-hv.txt");
             writeToFile(comparisons, namePrefix + "-cmp.txt");
@@ -108,8 +108,8 @@ public class Experiments {
 
             hyperVolumeMed = med(hyperVolumes);
             hyperVolumeIQR = iqr(hyperVolumes);
-            comparisonMed  = med(comparisons);
-            comparisonIQR  = iqr(comparisons);
+            comparisonMed = med(comparisons);
+            comparisonIQR = iqr(comparisons);
             runningTimeMed = med(runningTimes);
             runningTimeIQR = iqr(runningTimes);
         }
@@ -155,7 +155,7 @@ public class Experiments {
                         System.out.print("--------+--------+------+------");
                         for (int i = 0; i < suppliers.size(); ++i) {
                             results[i] = new RunResult(problem, suppliers.get(i), debSelection,
-                                                       jmetalComparison, variant, runDir, runs);
+                                    jmetalComparison, variant, runDir, runs);
                             System.out.print("+----------------------");
                         }
                         System.out.println();
@@ -173,17 +173,21 @@ public class Experiments {
                             System.out.printf("| %.3e (%.2e) ", rr.runningTimeMed, rr.runningTimeIQR);
                         }
                         System.out.println();
-                        System.out.print( "        |        |      | cmps ");
+                        System.out.print("        |        |      | cmps ");
                         for (RunResult rr : results) {
                             System.out.printf("| %.3e (%.2e) ", rr.comparisonMed, rr.comparisonIQR);
                         }
                         System.out.println();
+                        System.out.println(ru.ifmo.steady.inds.Storage.countz + " " + ru.ifmo.steady.inds2.StorageWithConvexHull.count1 + " " + ru.ifmo.steady.inds2.StorageWithConvexHull.count2);
+                        ru.ifmo.steady.inds.Storage.countz = 0;
+                        ru.ifmo.steady.inds2.StorageWithConvexHull.count1 = 0;
+                        ru.ifmo.steady.inds2.StorageWithConvexHull.count2 = 0;
                     }
                 }
             }
             System.out.print("--------+--------+------+------");
             for (int i = 0; i < suppliers.size(); ++i) {
-                 System.out.print("+----------------------");
+                System.out.print("+----------------------");
             }
             System.out.println();
         }
@@ -203,26 +207,54 @@ public class Experiments {
         Map<String, Runnable> actions = new HashMap<>();
         Map<String, Consumer<String>> setters = new HashMap<>();
 
-        actions.put("-S:inds", () -> {suppliers.add(() -> new ru.ifmo.steady.inds.Storage());});
-        actions.put("-S:inds2", () -> {suppliers.add(() -> new ru.ifmo.steady.inds2.StorageWithConvexHull());});
-        actions.put("-S:enlu", () -> {suppliers.add(() -> new ru.ifmo.steady.enlu.Storage());});
-        actions.put("-S:deb",  () -> {suppliers.add(() -> new ru.ifmo.steady.debNDS.Storage());});
-        actions.put("-V:pss",  () -> {variants.add(Variant.PureSteadyState);});
-        actions.put("-V:sisr", () -> {variants.add(Variant.SteadyInsertionSteadyRemoval);});
-        actions.put("-V:bisr", () -> {variants.add(Variant.BulkInsertionSteadyRemoval);});
-        actions.put("-V:bibr", () -> {variants.add(Variant.BulkInsertionBulkRemoval);});
-        actions.put("-O:debselTrue",   () -> {debSelection.add(true);});
-        actions.put("-O:debselFalse",  () -> {debSelection.add(false);});
-        actions.put("-O:jmetalTrue",   () -> {jmetalComparison.add(true);});
-        actions.put("-O:jmetalFalse",  () -> {jmetalComparison.add(false);});
+        actions.put("-S:inds", () -> {
+            suppliers.add(() -> new ru.ifmo.steady.inds.Storage());
+        });
+        actions.put("-S:inds2", () -> {
+            suppliers.add(() -> new ru.ifmo.steady.inds2.StorageWithConvexHull());
+        });
+        actions.put("-S:enlu", () -> {
+            suppliers.add(() -> new ru.ifmo.steady.enlu.Storage());
+        });
+        actions.put("-S:deb", () -> {
+            suppliers.add(() -> new ru.ifmo.steady.debNDS.Storage());
+        });
+        actions.put("-V:pss", () -> {
+            variants.add(Variant.PureSteadyState);
+        });
+        actions.put("-V:sisr", () -> {
+            variants.add(Variant.SteadyInsertionSteadyRemoval);
+        });
+        actions.put("-V:bisr", () -> {
+            variants.add(Variant.BulkInsertionSteadyRemoval);
+        });
+        actions.put("-V:bibr", () -> {
+            variants.add(Variant.BulkInsertionBulkRemoval);
+        });
+        actions.put("-O:debselTrue", () -> {
+            debSelection.add(true);
+        });
+        actions.put("-O:debselFalse", () -> {
+            debSelection.add(false);
+        });
+        actions.put("-O:jmetalTrue", () -> {
+            jmetalComparison.add(true);
+        });
+        actions.put("-O:jmetalFalse", () -> {
+            jmetalComparison.add(false);
+        });
 
-        setters.put("-D", (dir) -> {runDir.add(dir);});
-        setters.put("-R", (r) -> { try {
-            runs.add(Integer.parseInt(r));
-        } catch (NumberFormatException ex) {
-            System.out.println("Error: " + r + " is not a number!");
-            runs.clear();
-        }});
+        setters.put("-D", (dir) -> {
+            runDir.add(dir);
+        });
+        setters.put("-R", (r) -> {
+            try {
+                runs.add(Integer.parseInt(r));
+            } catch (NumberFormatException ex) {
+                System.out.println("Error: " + r + " is not a number!");
+                runs.clear();
+            }
+        });
 
         Set<String> knownOptions = new TreeSet<>(actions.keySet());
         knownOptions.add("-D=<run-dir>");
@@ -262,7 +294,7 @@ public class Experiments {
         }
 
         if (suppliers.isEmpty() || variants.isEmpty() || debSelection.isEmpty() || jmetalComparison.isEmpty()
-            || runDir.isEmpty() || runs.isEmpty()) {
+                || runDir.isEmpty() || runs.isEmpty()) {
             System.out.println("Error: Empty set of tested configurations!");
             System.out.println("Known options are:\n    " + knownOptions);
             System.exit(1);

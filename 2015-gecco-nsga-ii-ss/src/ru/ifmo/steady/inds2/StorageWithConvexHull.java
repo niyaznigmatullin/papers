@@ -6,27 +6,31 @@ import ru.ifmo.steady.inds2.TreapNode.*;
 import ru.ifmo.steady.util.FastRandom;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 
 import static ru.ifmo.steady.inds2.TreapNode.*;
 
 public class StorageWithConvexHull extends SolutionStorage {
 
-    int K = 100;
+    int K = 30;
 
     public void add(Solution s) {
         LLNode node = new LLNode(s);
         addToLayers(node);
-        makeConvexOnLastLayer();
         int sz = size();
-        while (K * K < sz) K++;
+        while (K * K * 2 < sz) K++;
+        makeConvexOnLastLayer();
     }
 
     private void makeConvexOnLastLayer() {
         if (layerRoot == null) return;
         HLNode lastLayer = layerRoot.rightmost();
-        LLNode v = lastLayer.key();
+        LLNode v = lastLayer.key().leftmost();
         int count = 0;
-        while (count < 2 * K && v != null) {
+        while (count < K && v != null) {
             if (v.convexHullStorage == null) {
                 v = v.next();
             } else {
@@ -34,8 +38,8 @@ public class StorageWithConvexHull extends SolutionStorage {
             }
             ++count;
         }
-        if (count >= 2 * K) {
-            v = lastLayer.key();
+        if (count >= K) {
+            v = lastLayer.key().leftmost();
             while (v != null) {
                 ConvexHullStorage cHStorage = v.convexHullStorage;
                 if (cHStorage != null) {
@@ -43,16 +47,18 @@ public class StorageWithConvexHull extends SolutionStorage {
                 }
                 v = v.next();
             }
-            LLNode first = lastLayer.key();
+            LLNode first = lastLayer.key().leftmost();
             v = first;
             int curCount = 0;
             while (v != null) {
                 curCount++;
                 if (curCount == K || v.next() == null) {
                     createBlock(first, v, curCount);
+                    first = v = v.next();
+                    curCount = 0;
+                } else {
+                    v = v.next();
                 }
-                first = v = v.next();
-                curCount = 0;
             }
         }
     }
@@ -336,6 +342,9 @@ public class StorageWithConvexHull extends SolutionStorage {
         }
     }
 
+    volatile public static int count1 = 0;
+    volatile public static int count2 = 0;
+
     private LLNode removeOneWorstByCrowding() {
         HLNode lastLayer = layerRoot.rightmost();
         LLNode lastLayerRoot = lastLayer.key();
@@ -361,9 +370,11 @@ public class StorageWithConvexHull extends SolutionStorage {
             if (v.convexHullStorage == null) {
                 cur = v;
                 v = v.next();
+                ++count1;
             } else {
                 cur = v.convexHullStorage.findBest(dx, dy); // can't do random here
                 v = v.convexHullStorage.right.next();
+                ++count2;
             }
             double curValue = cur.crowdingDistance(leftmost.key(), rightmost.key());
             if (chosen == null || bestValue > curValue) {
@@ -558,6 +569,7 @@ public class StorageWithConvexHull extends SolutionStorage {
 
     private class FastConvexHull extends ConvexHullStorage {
         LLNode[] hull;
+        List<LLNode> list;
         CrowdingPoint[] vs;
 
         final Comparator<CrowdingPoint> BY_ANGLE = new Comparator<CrowdingPoint>() {
@@ -581,9 +593,13 @@ public class StorageWithConvexHull extends SolutionStorage {
             }
         };
 
+        int compareDoubles(double a, double b) {
+            return Math.abs(a - b) < 1e-8 ? 0 : Double.compare(a, b);
+        }
+
         public FastConvexHull(LLNode left, LLNode right) {
             super(left, right);
-            List<LLNode> list = new ArrayList<>();
+            list = new ArrayList<>();
             while (true) {
                 left.convexHullStorage = this;
                 list.add(left);
@@ -591,6 +607,27 @@ public class StorageWithConvexHull extends SolutionStorage {
                 left = left.next();
             }
             hull = list.toArray(new LLNode[list.size()]);
+            Comparator<LLNode> comparePoints = new Comparator<LLNode>() {
+                @Override
+                public int compare(LLNode a, LLNode b) {
+                    int c = compareDoubles(a.p.x, b.p.x);
+                    if (c != 0) return c;
+                    return compareDoubles(a.p.y, b.p.y);
+                }
+            };
+            Arrays.sort(hull, comparePoints);
+            int sz = 0;
+            for (int i = 0; i < hull.length; i++) {
+                if (Double.isInfinite(hull[i].p.x) || Double.isInfinite(hull[i].p.y)) {
+                    continue;
+                }
+                if (sz > 0 && comparePoints.compare(hull[sz - 1], hull[i]) == 0) {
+                    continue;
+                }
+                hull[sz++] = hull[i];
+            }
+            hull = Arrays.copyOf(hull, sz);
+            LLNode[] copyHull = hull.clone();
             if (hull.length < 3) {
                 return;
             }
@@ -602,16 +639,25 @@ public class StorageWithConvexHull extends SolutionStorage {
                 }
             }
             final LLNode first = hull[0];
-            Arrays.sort(hull, 1, hull.length, new Comparator<LLNode>() {
-                public int compare(LLNode o1, LLNode o2) {
-                    counter.add(4); // TODO Counter
-                    double d = vmulFromPoint(first.p, o1.p, o2.p);
-                    if (d == 0) {
-                        return Double.compare(first.p.distanceSquared(o1.p), first.p.distanceSquared(o2.p));
+            try {
+                Arrays.sort(hull, 1, hull.length, new Comparator<LLNode>() {
+                    public int compare(LLNode o1, LLNode o2) {
+                        counter.add(4); // TODO Counter
+                        double d = vmulFromPoint(first.p, o1.p, o2.p);
+//                        if (Math.abs(d) < 1e-8) {
+                        if (d == 0) {
+                            return Double.compare(first.p.distanceSquared(o1.p), first.p.distanceSquared(o2.p));
+                        }
+//                        return d < -1e-8 ? 1 : d > 1e-8 ? -1 : 0;
+                        return Double.compare(d, 0);
                     }
-                    return Double.compare(d, 0);
+                });
+            } catch (Exception e) {
+                for (LLNode f : copyHull) {
+                    System.err.println(f.p.x + " " + f.p.y);
                 }
-            });
+                throw e;
+            }
             int cur = 2;
             for (int i = 2; i < hull.length; i++) {
                 LLNode add = hull[i];
@@ -648,18 +694,16 @@ public class StorageWithConvexHull extends SolutionStorage {
             int r = vs.length;
             while (l < r - 1) {
                 int mid = l + r >>> 1;
-                if (BY_ANGLE.compare(vs[mid], z) < 0) l = mid; else r = mid;
+                if (BY_ANGLE.compare(vs[mid], z) < 0) l = mid;
+                else r = mid;
             }
             return hull[r % hull.length];
         }
 
         @Override
         void destruct() {
-            LLNode left = this.left;
-            while (true) {
-                left.convexHullStorage = null;
-                if (left == right) break;
-                left = left.next();
+            for (LLNode e : list) {
+                e.convexHullStorage = null;
             }
         }
     }

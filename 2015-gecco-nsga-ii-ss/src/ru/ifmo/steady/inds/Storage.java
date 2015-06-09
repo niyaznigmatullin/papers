@@ -290,6 +290,8 @@ public class Storage extends SolutionStorage {
         }
     }
 
+    volatile public static int countz = 0;
+
     private LLNode removeWorstByCrowding(int count) {
         if (size() < count) {
             throw new IllegalStateException("Insufficient size of data structure");
@@ -329,6 +331,7 @@ public class Storage extends SolutionStorage {
                 Iterator<LLNode> candidateIterator = lastLayerL.nextLinkIterator();
 
                 while (candidateIterator.hasNext()) {
+                    ++countz;
                     LLNode curr = candidateIterator.next();
                     double currCrowd = curr.crowdingDistance(lKey, rKey);
                     if (crowding > currCrowd) {
