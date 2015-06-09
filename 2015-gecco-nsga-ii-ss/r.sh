@@ -50,13 +50,13 @@ elif [[ "$1" == "paper-steadiness-wilcox" ]]; then
 else
 	"$0" "expand"
     mkdir -p classes
-    javac -Xlint:unchecked -cp src -d classes src/ru/ifmo/steady/{*.java,util/*.java,inds/*.java,enlu/*.java,problem/*.java}
+    javac -Xlint:unchecked -cp src -d classes src/ru/ifmo/steady/{*.java,util/*.java,inds/*.java,inds2/*.java,enlu/*.java,problem/*.java}
     java -cp classes ru.ifmo.steady.SolutionStorageTests >/dev/null
     if [[ "$?" == "0" ]]; then
         if [[ "$1" == "paper-nsga" ]]; then
             java -cp classes ru.ifmo.steady.Experiments \
                 -O:debselTrue -O:jmetalTrue \
-                -S:inds -S:enlu -S:deb \
+                -S:inds -S:enlu -S:deb -S:inds2 \
                 -V:bibr -V:pss \
                 -D=paper-nsga-runs -R=100 \
                 | tee paper-nsga.log
@@ -70,10 +70,10 @@ else
             fi
         elif [[ "$1" == "paper-steadiness" ]]; then
             java -cp classes ru.ifmo.steady.Experiments \
-                -O:debselTrue -O:jmetalFalse \
-                -S:inds -V:pss \
+                -O:debselFalse -O:jmetalFalse \
+                -S:inds -S:inds2 -V:pss \
                 -V:sisr -V:bisr -V:bibr \
-                -D=paper-steadiness-runs -R=1000 \
+                -D=paper-steadiness-runs -R=100 \
                 | tee paper-steadiness.log
 
             if [[ "$?" == "0" ]]; then

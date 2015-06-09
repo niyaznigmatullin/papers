@@ -11,7 +11,7 @@ import static ru.ifmo.steady.inds2.TreapNode.*;
 
 public class StorageWithConvexHull extends SolutionStorage {
 
-    int K = 1;
+    int K = 100;
 
     public void add(Solution s) {
         LLNode node = new LLNode(s);
@@ -49,12 +49,19 @@ public class StorageWithConvexHull extends SolutionStorage {
             while (v != null) {
                 curCount++;
                 if (curCount == K || v.next() == null) {
-                    new StupidConvexHull(first, v);
+                    createBlock(first, v, curCount);
                 }
                 first = v = v.next();
                 curCount = 0;
             }
         }
+    }
+
+    private ConvexHullStorage createBlock(LLNode first, LLNode last, int count) {
+        if (count < 5) {
+            return null;
+        }
+        return new FastConvexHull(first, last);
     }
 
     public int getLayerCount() {
@@ -358,8 +365,8 @@ public class StorageWithConvexHull extends SolutionStorage {
                 cur = v.convexHullStorage.findBest(dx, dy); // can't do random here
                 v = v.convexHullStorage.right.next();
             }
-            double curValue = cur.getCrowdingX() * dx + cur.getCrowdingY() * dy;
-            if (bestValue > curValue) {
+            double curValue = cur.crowdingDistance(leftmost.key(), rightmost.key());
+            if (chosen == null || bestValue > curValue) {
                 chosen = cur;
                 bestValue = curValue;
             }
@@ -529,12 +536,121 @@ public class StorageWithConvexHull extends SolutionStorage {
             LLNode best = null;
             for (LLNode f : hull) {
                 double curCrowding = dx * f.getCrowdingX() + dy * f.getCrowdingY();
+                counter.add(2);
                 if (best == null || bestCrowding > curCrowding) {
                     best = f;
                     bestCrowding = curCrowding;
                 }
             }
             return best;
+        }
+
+        @Override
+        void destruct() {
+            LLNode left = this.left;
+            while (true) {
+                left.convexHullStorage = null;
+                if (left == right) break;
+                left = left.next();
+            }
+        }
+    }
+
+    private class FastConvexHull extends ConvexHullStorage {
+        LLNode[] hull;
+        CrowdingPoint[] vs;
+
+        final Comparator<CrowdingPoint> BY_ANGLE = new Comparator<CrowdingPoint>() {
+
+            int get(CrowdingPoint p) {
+                if (p.x > 0) {
+                    return p.y > 0 ? 2 : p.y < 0 ? 8 : 1;
+                } else if (p.x < 0) {
+                    return p.y > 0 ? 4 : p.y < 0 ? 6 : 5;
+                } else {
+                    return p.y > 0 ? 3 : p.y < 0 ? 7 : 0;
+                }
+            }
+
+            @Override
+            public int compare(CrowdingPoint p, CrowdingPoint q) {
+                counter.add(4);
+                int c = get(p) - get(q);
+                if (c != 0) return c;
+                return Double.compare(vmulFromPoint(CrowdingPoint.ORIGIN, p, q), 0);
+            }
+        };
+
+        public FastConvexHull(LLNode left, LLNode right) {
+            super(left, right);
+            List<LLNode> list = new ArrayList<>();
+            while (true) {
+                left.convexHullStorage = this;
+                list.add(left);
+                if (left == right) break;
+                left = left.next();
+            }
+            hull = list.toArray(new LLNode[list.size()]);
+            if (hull.length < 3) {
+                return;
+            }
+            for (int i = 1; i < hull.length; i++) {
+                if (hull[i].p.y < hull[0].p.y || hull[i].p.y == hull[0].p.y && hull[i].p.x < hull[0].p.x) {
+                    LLNode t = hull[i];
+                    hull[i] = hull[0];
+                    hull[0] = t;
+                }
+            }
+            final LLNode first = hull[0];
+            Arrays.sort(hull, 1, hull.length, new Comparator<LLNode>() {
+                public int compare(LLNode o1, LLNode o2) {
+                    counter.add(4); // TODO Counter
+                    double d = vmulFromPoint(first.p, o1.p, o2.p);
+                    if (d == 0) {
+                        return Double.compare(first.p.distanceSquared(o1.p), first.p.distanceSquared(o2.p));
+                    }
+                    return Double.compare(d, 0);
+                }
+            });
+            int cur = 2;
+            for (int i = 2; i < hull.length; i++) {
+                LLNode add = hull[i];
+                while (cur > 1) {
+                    counter.add(2); // TODO Counter
+                    if (vmulFromPoint(hull[cur - 2].p, hull[cur - 1].p, add.p) <= 0) {
+                        --cur;
+                        continue;
+                    }
+                    break;
+                }
+                hull[cur++] = add;
+            }
+            hull = Arrays.copyOf(hull, cur);
+            vs = new CrowdingPoint[hull.length];
+            for (int i = 0; i < hull.length; i++) {
+                vs[i] = (hull[(i + 1) % hull.length].p.subtract(hull[i].p));
+            }
+        }
+
+        private double vmulFromPoint(CrowdingPoint from, CrowdingPoint p, CrowdingPoint q) {
+            double x1 = p.x - from.x;
+            double y1 = p.y - from.y;
+            double x2 = q.x - from.x;
+            double y2 = q.y - from.y;
+            return x1 * y2 - x2 * y1;
+        }
+
+
+        @Override
+        LLNode findBest(double dx, double dy) {
+            CrowdingPoint z = new CrowdingPoint(dy, -dx);
+            int l = -1;
+            int r = vs.length;
+            while (l < r - 1) {
+                int mid = l + r >>> 1;
+                if (BY_ANGLE.compare(vs[mid], z) < 0) l = mid; else r = mid;
+            }
+            return hull[r % hull.length];
         }
 
         @Override
