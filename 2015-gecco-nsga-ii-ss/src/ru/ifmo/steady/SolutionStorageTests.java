@@ -189,5 +189,6 @@ public class SolutionStorageTests {
         new SolutionStorageTests(new ru.ifmo.steady.inds.Storage()).run();
         new SolutionStorageTests(new ru.ifmo.steady.enlu.Storage()).run();
         new SolutionStorageTests(new ru.ifmo.steady.debNDS.Storage()).run();
+        new SolutionStorageTests(new ru.ifmo.steady.inds2.StorageWithConvexHull()).run();
     }
 }
