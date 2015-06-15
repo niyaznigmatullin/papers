@@ -12,8 +12,8 @@ import ru.ifmo.steady.util.FastRandom;
 import ru.ifmo.steady.NSGA2.Variant;
 
 public class Experiments {
-    private static final int BUDGET = 125000;
-    private static final int GEN_SIZE = 25000;
+    private static final int BUDGET = 500000;
+    private static final int GEN_SIZE = 10000;
 
     private static final double orderStat(double[] a, double ratio) {
         double idx0 = (a.length - 1) * ratio;
@@ -178,10 +178,19 @@ public class Experiments {
                             System.out.printf("| %.3e (%.2e) ", rr.comparisonMed, rr.comparisonIQR);
                         }
                         System.out.println();
-                        System.out.println(ru.ifmo.steady.inds.Storage.countz + " " + ru.ifmo.steady.inds2.StorageWithConvexHull.count1 + " " + ru.ifmo.steady.inds2.StorageWithConvexHull.count2);
+                        System.out.println(ru.ifmo.steady.inds.Storage.countz + ", toLast = " + ru.ifmo.steady.inds.Storage.toLast + ", toNew = " + ru.ifmo.steady.inds.Storage.toNew +", additions = " + ru.ifmo.steady.inds.Storage.addition + ", newLayer = " + ru.ifmo.steady.inds.Storage.newLayer);
+                        System.out.println(ru.ifmo.steady.inds.Storage.sumSizeLast / ru.ifmo.steady.inds.Storage.addition);
+                        System.out.println(ru.ifmo.steady.inds.Storage.maxSize);
+                        System.out.println(ru.ifmo.steady.inds2.StorageWithConvexHull.count1 + " " + ru.ifmo.steady.inds2.StorageWithConvexHull.count2 + " " + ru.ifmo.steady.inds2.StorageWithConvexHull.rebuild);
                         ru.ifmo.steady.inds.Storage.countz = 0;
+                        ru.ifmo.steady.inds.Storage.toLast = 0;
+                        ru.ifmo.steady.inds.Storage.toNew = 0;
+                        ru.ifmo.steady.inds.Storage.addition = 0;
+                        ru.ifmo.steady.inds.Storage.newLayer = 0;
+                        ru.ifmo.steady.inds.Storage.sumSizeLast = 0;
                         ru.ifmo.steady.inds2.StorageWithConvexHull.count1 = 0;
                         ru.ifmo.steady.inds2.StorageWithConvexHull.count2 = 0;
+                        ru.ifmo.steady.inds2.StorageWithConvexHull.rebuild = 0;
                     }
                 }
             }

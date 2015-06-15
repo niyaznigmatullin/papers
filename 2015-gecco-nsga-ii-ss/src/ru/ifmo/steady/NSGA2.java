@@ -13,14 +13,17 @@ public class NSGA2 {
         BulkInsertionBulkRemoval("BIBR");
 
         private final String shortName;
+
         private Variant(String shortName) {
             this.shortName = shortName;
         }
+
         public String shortName() {
             return shortName;
         }
 
         private static final List<Variant> all = Arrays.asList(values());
+
         public static List<Variant> all() {
             return all;
         }
@@ -87,7 +90,8 @@ public class NSGA2 {
         evaluations = 0;
         for (int i = 0; i < storageSize; ++i) {
             double[] ind = problem.generate();
-            Solution sol = problem.evaluate(ind);
+//            Solution sol = problem.evaluate(ind);
+            Solution sol = new Solution(1. * i / storageSize, 13 - 1. * i / storageSize, ind);
             ++evaluations;
             storage.add(sol);
         }
@@ -151,9 +155,9 @@ public class NSGA2 {
             throw new IllegalArgumentException("Lengths are not equal");
         }
         if (r.nextDouble() < 0.1) {
-            return new double[][] {
-                a.clone(),
-                howManyNeeded == 1 ? null : b.clone()
+            return new double[][]{
+                    a.clone(),
+                    howManyNeeded == 1 ? null : b.clone()
             };
         }
         double[][] rv = new double[2][];
@@ -274,15 +278,18 @@ public class NSGA2 {
                         storage.add(s);
                         storage.removeWorst(1);
                     }
-                } break;
+                }
+                break;
                 case BulkInsertionSteadyRemoval: {
                     storage.addAll(sols);
                     storage.removeWorst(storageSize);
-                } break;
+                }
+                break;
                 case BulkInsertionBulkRemoval: {
                     storage.addAll(sols);
                     storage.removeWorstDebCompatible(storageSize);
-                } break;
+                }
+                break;
             }
         }
     }

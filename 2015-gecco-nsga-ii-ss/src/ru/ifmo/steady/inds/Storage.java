@@ -15,9 +15,36 @@ import static ru.ifmo.steady.inds.TreapNode.merge;
 import static ru.ifmo.steady.inds.TreapNode.cutRightmost;
 
 public class Storage extends SolutionStorage {
+
+    volatile public static int addition = 0, newLayer = 0;
+    volatile public static long toLast = 0, toNew = 0;
+    volatile public static double sumSizeLast;
+    volatile public static double maxSize;
+
     public void add(Solution s) {
+        int oldLayerCount = getLayerCount();
+        LLNode oldLeftmost = layerRoot == null ? null : layerRoot.rightmost().key().leftmost();
+        LLNode oldRightmost = layerRoot == null ? null : layerRoot.rightmost().key().rightmost();
+        int oldSize = layerRoot == null ? 0 : layerRoot.rightmost().key().size();
+        ++addition;
+//        sumSizeLast += oldSize;
+        maxSize = Math.max(maxSize, oldSize);
         LLNode node = new LLNode(s);
         addToLayers(node);
+//        if ((layerRoot == null ? null : layerRoot.rightmost().key().leftmost()) != oldLeftmost ||
+//                (layerRoot == null ? null : layerRoot.rightmost().key().rightmost()) != oldRightmost) {
+        sumSizeLast += layerRoot == null ? 0 : layerRoot.rightmost().key().size();
+//        sumSizeLast = Math.max(layerRoot == null ? 0 : layerRoot.rightmost().key().size(), sumSizeLast);
+//        } else {
+//            sumSizeLast += (layerRoot == null ? 0 : layerRoot.rightmost().key().size()) - oldSize;
+//        }
+        maxSize = Math.max(maxSize, layerRoot == null ? 0 : layerRoot.rightmost().key().size());
+        if (getLayerCount() > oldLayerCount) {
+            ++newLayer;
+            toNew += layerRoot == null ? 0 : layerRoot.rightmost().key().size();
+        } else {
+            toLast += layerRoot == null ? 0 : layerRoot.rightmost().key().size() - oldSize;
+        }
     }
 
     public int getLayerCount() {
@@ -30,9 +57,11 @@ public class Storage extends SolutionStorage {
         }
         return new Iterator<Solution>() {
             private LLNode curr = TreapNode.getKth(layerRoot, index).key().leftmost();
+
             public boolean hasNext() {
                 return curr != null;
             }
+
             public Solution next() {
                 if (!hasNext()) {
                     throw new IllegalStateException("No more elements");
@@ -41,7 +70,7 @@ public class Storage extends SolutionStorage {
                     curr = curr.next();
                     return rv;
                 }
-             }
+            }
         };
     }
 
@@ -376,9 +405,9 @@ public class Storage extends SolutionStorage {
             LLNode prev = prev();
             LLNode next = next();
             return key().crowdingDistance(
-                prev == null ? null : prev.key(),
-                next == null ? null : next.key(),
-                leftmost, rightmost, counter
+                    prev == null ? null : prev.key(),
+                    next == null ? null : next.key(),
+                    leftmost, rightmost, counter
             );
         }
 
@@ -389,6 +418,7 @@ public class Storage extends SolutionStorage {
                 public boolean hasNext() {
                     return curr != null;
                 }
+
                 public LLNode next() {
                     LLNode rv = curr;
                     curr = curr.next();

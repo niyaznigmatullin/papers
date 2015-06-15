@@ -73,7 +73,7 @@ else
                 -O:debselFalse -O:jmetalFalse \
                 -S:inds -S:inds2 -V:pss \
                 -V:sisr -V:bisr -V:bibr \
-                -D=paper-steadiness-runs -R=10 \
+                -D=paper-steadiness-runs -R=2 \
                 | tee paper-steadiness.log
 
             if [[ "$?" == "0" ]]; then
