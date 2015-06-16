@@ -216,6 +216,7 @@ public class Experiments {
         Map<String, Runnable> actions = new HashMap<>();
         Map<String, Consumer<String>> setters = new HashMap<>();
 
+<<<<<<< HEAD
         actions.put("-S:inds", () -> {
             suppliers.add(() -> new ru.ifmo.steady.inds.Storage());
         });
@@ -264,6 +265,30 @@ public class Experiments {
                 runs.clear();
             }
         });
+=======
+        actions.put("-S:inds-lasthull", () -> suppliers.add(() -> new ru.ifmo.steady.inds.StorageLastHull()));
+        actions.put("-S:inds-allhulls", () -> suppliers.add(() -> new ru.ifmo.steady.inds.StorageAllHulls()));
+
+        actions.put("-S:inds", () -> suppliers.add(() -> new ru.ifmo.steady.inds.Storage()));
+        actions.put("-S:enlu", () -> suppliers.add(() -> new ru.ifmo.steady.enlu.Storage()));
+        actions.put("-S:deb",  () -> suppliers.add(() -> new ru.ifmo.steady.debNDS.Storage()));
+        actions.put("-V:pss",  () -> variants.add(Variant.PureSteadyState));
+        actions.put("-V:sisr", () -> variants.add(Variant.SteadyInsertionSteadyRemoval));
+        actions.put("-V:bisr", () -> variants.add(Variant.BulkInsertionSteadyRemoval));
+        actions.put("-V:bibr", () -> variants.add(Variant.BulkInsertionBulkRemoval));
+        actions.put("-O:debselTrue",   () -> debSelection.add(true));
+        actions.put("-O:debselFalse",  () -> debSelection.add(false));
+        actions.put("-O:jmetalTrue",   () -> jmetalComparison.add(true));
+        actions.put("-O:jmetalFalse",  () -> jmetalComparison.add(false));
+
+        setters.put("-D", (dir) -> runDir.add(dir));
+        setters.put("-R", (r) -> { try {
+            runs.add(Integer.parseInt(r));
+        } catch (NumberFormatException ex) {
+            System.out.println("Error: " + r + " is not a number!");
+            runs.clear();
+        }});
+>>>>>>> upstream/convex-hull
 
         Set<String> knownOptions = new TreeSet<>(actions.keySet());
         knownOptions.add("-D=<run-dir>");
