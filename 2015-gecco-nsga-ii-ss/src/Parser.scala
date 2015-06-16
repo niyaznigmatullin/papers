@@ -50,7 +50,7 @@ object Parser extends App {
     println("\\caption{}\\label{}\\small")
     println("\\setlength{\\tabcolsep}{0.5em}")
     println("\\begin{tabular}{c|cccc|c|cccc}\\hline")
-    println("Problem & PSS & SISR & BISR & BIBR & Problem & PSS & SISR & BISR & BIBR \\\\")
+    println("Problem & PSS & SISR & BISR & BIBR \\\\") // & Problem & PSS & SISR & BISR & BIBR \\\\")
   }
 
   def endTable() {
@@ -80,25 +80,62 @@ object Parser extends App {
     case "paper-steadiness.log" =>
       val data = lines grouped 21 map { grp =>
         val name = grp(1).drop(1).dropRight(1).trim
-        val vPSS = getDoubles(grp(5)).head
-        val vSISR = getDoubles(grp(9)).head
-        val vBISR = getDoubles(grp(13)).head
-        val vBIBR = getDoubles(grp(17)).head
-        (name, IndexedSeq(vPSS, vSISR, vBISR, vBIBR))
+        val vPSS = getDoubles(grp(6)).grouped(2).map { a => a.head }
+        val vSISR = getDoubles(grp(10)).grouped(2).map { a => a.head }
+        val vBISR = getDoubles(grp(14)).grouped(2).map { a => a.head }
+        val vBIBR = getDoubles(grp(18)).grouped(2).map { a => a.head }
+        (name, (vPSS ++ vSISR).toIndexedSeq)
       }
 
       startTableSteadiness()
       data.toIndexedSeq.groupBy(_._1(0)).foreach { grp =>
         println("\\hline")
-        grp._2.sortBy(_._1).grouped(2) foreach { sq =>
+        grp._2.sortBy(_._1).grouped(1) foreach { sq =>
           val strings0 = sq flatMap { case (name, values) => name +: values.map(texed(3)) }
-          val strings = if (sq.size == 2) strings0 else strings0 ++ Seq("", "", "", "", "")
+          val strings = if (sq.size == 1) strings0 else strings0 ++ Seq("", "", "", "", "")
+          println(strings.mkString("", " & ", "\\\\"))
+        }
+      }
+      endTable()
+	  val data2 = lines grouped 21 map { grp =>
+        val name = grp(1).drop(1).dropRight(1).trim
+        val vPSS = getDoubles(grp(6)).grouped(2).map { a => a.head }
+        val vSISR = getDoubles(grp(10)).grouped(2).map { a => a.head }
+        val vBISR = getDoubles(grp(14)).grouped(2).map { a => a.head }
+        val vBIBR = getDoubles(grp(18)).grouped(2).map { a => a.head }
+        (name, (vBISR ++ vBIBR).toIndexedSeq)
+      }
+
+      startTableSteadiness()
+      data2.toIndexedSeq.groupBy(_._1(0)).foreach { grp =>
+        println("\\hline")
+        grp._2.sortBy(_._1).grouped(1) foreach { sq =>
+          val strings0 = sq flatMap { case (name, values) => name +: values.map(texed(3)) }
+          val strings = if (sq.size == 1) strings0 else strings0 ++ Seq("", "", "", "", "")
           println(strings.mkString("", " & ", "\\\\"))
         }
       }
       endTable()
 
-    case _ =>
+     case "niyaz-log-100-25000.log" =>
+      val data = lines grouped 9 map { grp =>
+        val name = grp(1).drop(1).dropRight(1).trim
+        val vPSS = getDoubles(grp(6))
+        (name, vPSS.toIndexedSeq)
+      }
+
+      startTableSteadiness()
+      data.toIndexedSeq.groupBy(_._1(0)).foreach { grp =>
+        println("\\hline")
+        grp._2.sortBy(_._1).grouped(1) foreach { sq =>
+          val strings0 = sq flatMap { case (name, values) => name +: values.map(texed(3)) }
+          val strings = if (sq.size == 1) strings0 else strings0 ++ Seq("", "", "", "", "")
+          println(strings.mkString("", " & ", "\\\\"))
+        }
+      }
+      endTable()
+
+   case _ =>
       println("Error: don't know how to process file " + args(0))
   }
 }
