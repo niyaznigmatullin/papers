@@ -23,7 +23,7 @@ public class StorageWithConvexHull extends SolutionStorage {
         ++additions;
         addToLayers(node);
         int sz = size();
-        while (K * K * 2 < sz) K++;
+        while (K * K < sz) K++;
         makeConvexOnLastLayer();
     }
 
@@ -42,8 +42,6 @@ public class StorageWithConvexHull extends SolutionStorage {
                 }
                 ++count;
                 if (count == K || v.next() == null || v.next().convexHullStorage != null) {
-                    if (count >= K / 4)
-                        createBlock(firstHere, v, count);
                     firstHere = null;
                 }
                 v = v.next();
@@ -604,7 +602,8 @@ public class StorageWithConvexHull extends SolutionStorage {
         };
 
         int compareDoubles(double a, double b) {
-            return Math.abs(a - b) < 1e-8 ? 0 : Double.compare(a, b);
+//            return Math.abs(a - b) < 1e-8 ? 0 : Double.compare(a, b);
+            return Double.compare(a, b);
         }
 
         public FastConvexHull(LLNode left, LLNode right) {
@@ -661,6 +660,7 @@ public class StorageWithConvexHull extends SolutionStorage {
                         }
                     });
                 } catch (Exception e) {
+                    System.err.println(copyHull.length);
                     for (LLNode f : copyHull) {
                         System.err.println(f.p.x + " " + f.p.y);
                     }
